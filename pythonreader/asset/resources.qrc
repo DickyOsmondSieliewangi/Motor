@@ -1,0 +1,23 @@
+<RCC>
+  <qresource prefix="main">
+    <file>popupiconclk.png</file>
+    <file>popupicon.png</file>
+    <file>goodSignal.png</file>
+    <file>noSignal.png</file>
+    <file>calclk.png</file>
+    <file>clcclk.png</file>
+    <file>infoclk.png</file>
+    <file>linearclk.png</file>
+    <file>olclck.png</file>
+    <file>pwmclk.png</file>
+    <file>bgMain.png</file>
+    <file>calibrate.png</file>
+    <file>clc.png</file>
+    <file>info.png</file>
+    <file>linear.png</file>
+    <file>olc.png</file>
+    <file>pwmspeed.png</file>
+    <file>backgroundMain.png</file>
+  </qresource>
+  <qresource prefix="linlog"/>
+</RCC>
