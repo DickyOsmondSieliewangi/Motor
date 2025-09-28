@@ -2,9 +2,9 @@
 #include <LittleFS.h>
 
 // Motor Pins
-#define enA 14
-#define in1 26
-#define in2 27
+#define enB 14
+#define in3 26
+#define in4 27
 
 // Encoder Pins
 #define encoderA 33
@@ -88,7 +88,7 @@ bool saveSpeedLogging() {
   file.write((uint8_t*)pwmLogging, sizeof(float) * len); 
   file.write((uint8_t*)speedLogging, sizeof(float) * len);
   file.close();
-  Serial.println("Float array saved");
+  //Serial.println("Float array saved");
   return true;
 }
 
@@ -230,14 +230,14 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(encoderB), updateEncoder, CHANGE);
 
   // Initialize motor pins
-  pinMode(enA, OUTPUT);
-  pinMode(in1, OUTPUT);
-  pinMode(in2, OUTPUT);
+  pinMode(enB, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
   ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-  ledcAttachPin(enA, PWM_CHANNEL);
+  ledcAttachPin(enB, PWM_CHANNEL);
   ledcWrite(PWM_CHANNEL, 0); // Start with motor off
-  digitalWrite(in1, HIGH); //Motor forward
-  digitalWrite(in2, LOW);
+  digitalWrite(in3, HIGH); //Motor forward
+  digitalWrite(in4, LOW);
 
   Serial.begin(115200);
   delay(1000); // Wait for Serial to initialize
@@ -253,14 +253,14 @@ void setup() {
 //Motor control functions
 void moveMotor(int PWM, int direction) {
   if (direction == 1) {
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
+    digitalWrite(in3, HIGH);
+    digitalWrite(in4, LOW);
   } else if (direction == -1) {
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, HIGH);
   } else {
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, LOW); // Stop motor
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, LOW); // Stop motor
   }
   ledcWrite(PWM_CHANNEL, PWM);
 }
@@ -531,11 +531,14 @@ void readMotorCharacteristic(){
 }
 
 void defineLinearPWMSpeedRelation(){
-  if (!LittleFS.exists(MOTOR_LIN_CHAR)) {
-    Serial.println(0);
+  if(LittleFS.exists(CALIBRATION_FILE)&&LittleFS.exists(MOTOR_CHAR_FILE)){
+      Serial.println(2);
+      Serial.printf("%d %f\n", pulsesPerRevolution, maxRPM);
+  } else if (LittleFS.exists(CALIBRATION_FILE)) {
+      Serial.println(1);
+      Serial.printf("%d\n", pulsesPerRevolution);
   } else {
-    Serial.println(1);
-    Serial.printf("%d %d %f %f\n", minLinPWM, maxLinPWM, minLinRPM, maxLinRPM);
+      Serial.println(0);
   }
 
   while(true){
@@ -619,7 +622,7 @@ void motorOpenLoopControl(){
                 currentTime = millis();
 
                 //Print header
-                Serial.println("time_ms,rpm,targetrpm");
+                Serial.println("time_ms,rpm,targetrpm,pwm");
                 moveMotor(targetPWM,1);
 
                 while(millis() - startTime <= LOGGING_TIME){
@@ -643,7 +646,7 @@ void motorOpenLoopControl(){
 
                     float olSpeed = MAFilter(MABuff, MALen);
 
-                    Serial.printf("%lu,%.2f,%.2f\n", millis()-startTime, olSpeed, targetSPEED);
+                    Serial.printf("%lu,%.2f,%.2f,%d\n", millis()-startTime, olSpeed, targetSPEED, targetPWM);
 
                   }
                 }
@@ -675,98 +678,107 @@ void motorOpenLoopControl(){
   }
 }
 
-float PIDcontrol(float target, float current, float kp, float ki, float kd, float dt) {
-  static float previousError = 0;
-  static float integral = 0;
-  float derivative;
-
-  float error = target - current;
-
-  integral += error * dt;
-  derivative = (error - previousError) / dt;
-
-  float output = kp * error + ki * integral + kd * derivative;
-  
-
-  previousError = error;
-  return output;
-}
-
-
 void motorClosedLoopControl(){
-  float targetSPEED, currentSPEED;
-  float kp, ki, kd;
-  int targetPWM;
-  float totalSpeed, olSpeed, speed;
-  float control;
-  int controlPWM;
-  int i;
+  while(true){
+    if(Serial.available()){
+      int command = Serial.parseInt();
 
-  //Times used
-  unsigned long startTime, currentTime;
-  unsigned long SETTLE_TIME = 1000;
-  unsigned long LOGGING_TIME = 5000;
-  unsigned long SAMPLING_TIME = 10;
+      switch(command) {
+          case 1: {
+              float targetSPEED, currentSPEED;
+              float k1, k2, k3;
+              int targetPWM;
+              float olSpeed, speed;
+              int i;
 
-  float medBuff[5] = {0};
-  float MABuff[10] = {0};
-  int medLen = sizeof(medBuff) / sizeof(medBuff[0]);
-  int MALen = sizeof(MABuff) / sizeof(MABuff[0]);
+              //Times used
+              unsigned long startTime, currentTime;
+              unsigned long SETTLE_TIME = 1000;
+              unsigned long LOGGING_TIME = 5000;
+              unsigned long SAMPLING_TIME = 10;
 
-  if(Serial.available()){
-    targetSPEED = Serial.parseFloat();
-    kp = Serial.parseFloat();
-    ki = Serial.parseFloat();
-    kd = Serial.parseFloat();
+              float medBuff[5] = {0};
+              float MABuff[10] = {0};
+              float c[3] = {0};
+              float e[3] = {0};
+              int medLen = sizeof(medBuff) / sizeof(medBuff[0]);
+              int MALen = sizeof(MABuff) / sizeof(MABuff[0]);
+              int eLen = sizeof(e) / sizeof(e[0]);
+              int cLen = sizeof(c) / sizeof(c[0]);
 
-    moveMotor(0,0);
-    delay(SETTLE_TIME);
+              if(Serial.available()){
+                targetSPEED = Serial.parseFloat();
+                SAMPLING_TIME = Serial.parseInt();
+                k1 = Serial.parseFloat();
+                k2 = Serial.parseFloat();
+                k3 = Serial.parseFloat();
 
-    noInterrupts();
-    encoderTicks = 0;
-    interrupts();
+                moveMotor(0,0);
+                delay(SETTLE_TIME);
 
-    startTime = millis();
-    currentTime = millis();
+                noInterrupts();
+                encoderTicks = 0;
+                interrupts();
 
-    //Print header
-    Serial.println("time_ms,rpm,targetrpm");
+                startTime = millis();
+                currentTime = millis();
 
-    control = PIDcontrol(targetSPEED, 0.0, kp, ki, kd, SAMPLING_TIME/1000.0);
-    totalSpeed = control + 0.0;
-    controlPWM = (int)mapFloat(totalSpeed, minLinRPM, maxLinRPM, 0, 255);
-    moveMotor(controlPWM, 1);
+                //Print header
+                Serial.println("time_ms,rpm,targetrpm,pwm");
 
-    while(millis() - startTime <= LOGGING_TIME){
-      if(millis() - currentTime > SAMPLING_TIME){
-        currentTime = millis();
-        speed = readMotorSpeed(float(SAMPLING_TIME));
+                //Discrete PID control initializer
+                e[2] = targetSPEED; e[1] = targetSPEED; e[0] = targetSPEED;
+                c[2] = c[1] + k1 * e[2] + k2 * e[1] + k3 * e[0];
+                moveMotor((int)constrain(c[2], 0, 255),1);
 
-        for(i = medLen - 1; i > 0; i--){
-          medBuff[i] = medBuff[i - 1];
-        }
+                while(millis() - startTime <= LOGGING_TIME){
+                  if(millis() - currentTime > SAMPLING_TIME){
+                    speed = readMotorSpeed(float(SAMPLING_TIME));
+                    noInterrupts();
+                    encoderTicks = 0;
+                    interrupts();
+                    currentTime = millis();
 
-        for(i = MALen - 1; i > 0; i--){
-          MABuff[i] = MABuff[i - 1];
-        }
+                    for(i = medLen - 1; i > 0; i--){
+                      medBuff[i] = medBuff[i - 1];
+                    }
 
-        medBuff[0] = speed;
-        MABuff[0] = medianFilter(medBuff, medLen);
+                    for(i = MALen - 1; i > 0; i--){
+                      MABuff[i] = MABuff[i - 1];
+                    }
 
-        olSpeed = MAFilter(MABuff, MALen);
+                    medBuff[0] = speed;
+                    MABuff[0] = medianFilter(medBuff, medLen);
 
-        //Control
-        control = PIDcontrol(targetSPEED, olSpeed, kp, ki, kd, SAMPLING_TIME/1000.0);
-        totalSpeed = constrain(control + olSpeed, 0.0, maxRPM);
-        
-        controlPWM = (int)mapFloat(totalSpeed, minLinRPM, maxLinRPM, 0, 255);
-        moveMotor(controlPWM, 1);
+                    olSpeed = MAFilter(MABuff, MALen);
 
-        Serial.printf("%lu,%.2f,%.2f\n", millis()-startTime, olSpeed, targetSPEED);
+                    //Control
+                    for (i = 0; i < eLen - 1; i++){
+                      e[i] = e[i + 1];
+                    }
+                    e[eLen - 1] = targetSPEED - olSpeed;
+                    for (i = 0; i < cLen - 1; i++){
+                      c[i] = c[i + 1];
+                    }
+                    c[cLen - 1] = c[cLen - 2] + k1 * e[eLen - 1] + k2 * e[eLen - 2] + k3 * e[eLen - 3];
+                    targetPWM = (int)constrain(c[cLen - 1], 0, 255);
+                    moveMotor(targetPWM,1);
 
+                    Serial.printf("%lu,%.2f,%.2f,%d\n", millis()-startTime, olSpeed, targetSPEED, targetPWM);
+
+                  }
+                }
+                moveMotor(0,0);
+                delay(SETTLE_TIME);
+                Serial.println("DONE");
+              }
+              break;
+          }
+          case 4:
+              return;
+  
       }
     }
-    moveMotor(0,0);
   }
 }
 

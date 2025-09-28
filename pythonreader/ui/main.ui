@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
-    <height>576</height>
+    <width>1280</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,14 +18,14 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1024</width>
-    <height>576</height>
+    <width>1280</width>
+    <height>720</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1024</width>
-    <height>576</height>
+    <width>1280</width>
+    <height>720</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -59,7 +59,7 @@
         <property name="sizeHint" stdset="0">
          <size>
           <width>20</width>
-          <height>127</height>
+          <height>159</height>
          </size>
         </property>
        </spacer>
@@ -94,11 +94,11 @@
             </property>
             <property name="styleSheet">
              <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
+font-size: 16pt;
 color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
-             <string>PPR          :</string>
+             <string>PPR             :</string>
             </property>
            </widget>
           </item>
@@ -106,11 +106,11 @@ color: rgb(255, 255, 255);</string>
            <widget class="QLabel" name="label_2">
             <property name="styleSheet">
              <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
+font-size: 16pt;
 color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
-             <string>max RPM :</string>
+             <string>max RPM  :</string>
             </property>
            </widget>
           </item>
@@ -122,13 +122,22 @@ color: rgb(255, 255, 255);</string>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="styleSheet">
              <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
+font-size: 16pt;
 color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
-             <string>   --   </string>
+             <string>--</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -140,13 +149,22 @@ color: rgb(255, 255, 255);</string>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="styleSheet">
              <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
+font-size: 16pt;
 color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
-             <string>   --   </string>
+             <string>--</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -162,7 +180,7 @@ color: rgb(255, 255, 255);</string>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>202</width>
+            <width>283</width>
             <height>20</height>
            </size>
           </property>
@@ -181,7 +199,7 @@ color: rgb(255, 255, 255);</string>
         <property name="sizeHint" stdset="0">
          <size>
           <width>20</width>
-          <height>335</height>
+          <height>419</height>
          </size>
         </property>
        </spacer>
@@ -189,21 +207,190 @@ color: rgb(255, 255, 255);</string>
      </layout>
     </item>
     <item>
+     <spacer name="horizontalSpacer_12">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="2" column="3">
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item row="3" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
         <item>
-         <widget class="QPushButton" name="clc">
+         <widget class="QPushButton" name="olc">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
           <property name="minimumSize">
            <size>
-            <width>96</width>
-            <height>96</height>
+            <width>135</width>
+            <height>135</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    border-image: url(:/main/olc.png);
+    border: 2px solid transparent;  /* Invisible border to maintain size */
+    border-radius: 8px;  /* Rounded corners */
+}
+
+QPushButton:hover {
+    border-image: url(:/main/olc.png);
+	background-color: rgb(255, 255, 0);
+    border-radius: 8px;  /* Rounded corners */
+}
+
+QPushButton:pressed {
+    border-image: url(:/main/olclck.png);
+	background-color: none;
+    border-radius: 8px;  /* Rounded corners */
+}</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_7">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Minimum</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>22</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="4">
+       <spacer name="horizontalSpacer_4">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::MinimumExpanding</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLabel" name="label_6">
+        <property name="styleSheet">
+         <string notr="true">font-family: &quot;Iceland&quot;;
+font-size: 16pt;
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="text">
+         <string>Open Loop Control</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="5">
+       <widget class="QLabel" name="label_10">
+        <property name="styleSheet">
+         <string notr="true">font-family: &quot;Iceland&quot;;
+font-size: 16pt;
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="text">
+         <string>Linear Region Setup</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Minimum</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>130</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="1" column="6">
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="statusIndicator">
+          <property name="minimumSize">
+           <size>
+            <width>30</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLabel#statusIndicator{
+	border-image: url(:/main/noSignal.png);
+}
+
+QLabel#statusIndicator[status=&quot;green&quot;] {
+	border-image: url(:/main/goodSignal.png);
+}
+
+QLabel#statusIndicator[status=&quot;red&quot;] {
+    border-image: url(:/main/noSignal.png); /* or a red icon */
+}</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="3">
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QPushButton" name="clc">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>135</width>
+            <height>135</height>
            </size>
           </property>
           <property name="styleSheet">
@@ -240,7 +427,7 @@ QPushButton:pressed {
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>50</width>
+            <width>22</width>
             <height>20</height>
            </size>
           </property>
@@ -248,407 +435,36 @@ QPushButton:pressed {
         </item>
        </layout>
       </item>
-      <item row="3" column="5">
-       <widget class="QLabel" name="label_7">
-        <property name="styleSheet">
-         <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
-color: rgb(255, 255, 255);</string>
-        </property>
-        <property name="text">
-         <string>Practicum Information</string>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_5">
-        <item>
-         <widget class="QPushButton" name="olc">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>96</width>
-            <height>96</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-    border-image: url(:/main/olc.png);
-    border: 2px solid transparent;  /* Invisible border to maintain size */
-    border-radius: 8px;  /* Rounded corners */
-}
-
-QPushButton:hover {
-    border-image: url(:/main/olc.png);
-	background-color: rgb(255, 255, 0);
-    border-radius: 8px;  /* Rounded corners */
-}
-
-QPushButton:pressed {
-    border-image: url(:/main/olclck.png);
-	background-color: none;
-    border-radius: 8px;  /* Rounded corners */
-}</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_7">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Preferred</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item row="6" column="1">
-       <widget class="QLabel" name="label_8">
-        <property name="styleSheet">
-         <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
-color: rgb(255, 255, 255);</string>
-        </property>
-        <property name="text">
-         <string>Encoder Calibration</string>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="3">
-       <spacer name="verticalSpacer_2">
+      <item row="1" column="1">
+       <spacer name="verticalSpacer_6">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeType">
-         <enum>QSizePolicy::Minimum</enum>
+         <enum>QSizePolicy::Fixed</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
           <width>20</width>
-          <height>30</height>
+          <height>38</height>
          </size>
         </property>
        </spacer>
       </item>
-      <item row="7" column="3">
-       <spacer name="verticalSpacer_3">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Minimum</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>56</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="2" column="4">
-       <spacer name="horizontalSpacer_4">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::MinimumExpanding</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>25</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="2" column="5">
-       <layout class="QHBoxLayout" name="horizontalLayout_7">
-        <item>
-         <widget class="QPushButton" name="info">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>96</width>
-            <height>96</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-    border-image: url(:/main/info.png);
-    border: 2px solid transparent;  /* Invisible border to maintain size */
-    border-radius: 8px;  /* Rounded corners */
-}
-
-QPushButton:hover {
-    border-image: url(:/main/info.png);
-	background-color: rgb(255, 255, 0);
-    border-radius: 8px;  /* Rounded corners */
-}
-
-QPushButton:pressed {
-    border-image: url(:/main/infoclk.png);
-	background-color: none;
-    border-radius: 8px;  /* Rounded corners */
-}</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_8">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Preferred</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>50</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item row="5" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_9">
-        <item>
-         <widget class="QPushButton" name="encoder">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>96</width>
-            <height>96</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-    border-image: url(:/main/calibrate.png);
-    border: 2px solid transparent;  /* Invisible border to maintain size */
-    border-radius: 8px;  /* Rounded corners */
-}
-
-QPushButton:hover {
-    border-image: url(:/main/calibrate.png);
-	background-color: rgb(255, 255, 0);
-    border-radius: 8px;  /* Rounded corners */
-}
-
-QPushButton:pressed {
-    border-image: url(:/main/calclk.png);
-	background-color: none;
-    border-radius: 8px;  /* Rounded corners */
-}</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_11">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Preferred</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item row="2" column="2">
-       <spacer name="horizontalSpacer_3">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::MinimumExpanding</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>55</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="2" column="6">
-       <spacer name="horizontalSpacer_6">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Minimum</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>84</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="3" column="3">
-       <widget class="QLabel" name="label_5">
-        <property name="styleSheet">
-         <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
-color: rgb(255, 255, 255);</string>
-        </property>
-        <property name="text">
-         <string>Closed Loop Control</string>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="5">
-       <layout class="QHBoxLayout" name="horizontalLayout_8">
-        <item>
-         <widget class="QPushButton" name="lrc">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>96</width>
-            <height>96</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-    border-image: url(:/main/linear.png);
-    border: 2px solid transparent;  /* Invisible border to maintain size */
-    border-radius: 8px;  /* Rounded corners */
-}
-
-QPushButton:hover {
-    border-image: url(:/main/linear.png);
-	background-color: rgb(255, 255, 0);
-    border-radius: 8px;  /* Rounded corners */
-}
-
-QPushButton:pressed {
-    border-image: url(:/main/linearclk.png);
-	background-color: none;
-    border-radius: 8px;  /* Rounded corners */
-}</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_10">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Minimum</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>50</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item row="6" column="5">
-       <widget class="QLabel" name="label_10">
-        <property name="styleSheet">
-         <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
-color: rgb(255, 255, 255);</string>
-        </property>
-        <property name="text">
-         <string>Linear Region Setup</string>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLabel" name="label_6">
-        <property name="styleSheet">
-         <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
-color: rgb(255, 255, 255);</string>
-        </property>
-        <property name="text">
-         <string>Open Loop Control</string>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="3">
+      <item row="6" column="3">
        <layout class="QHBoxLayout" name="horizontalLayout_6">
         <item>
          <widget class="QPushButton" name="log">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
           <property name="minimumSize">
            <size>
-            <width>96</width>
-            <height>96</height>
+            <width>135</width>
+            <height>135</height>
            </size>
           </property>
           <property name="styleSheet">
@@ -681,11 +497,11 @@ QPushButton:pressed {
            <enum>Qt::Horizontal</enum>
           </property>
           <property name="sizeType">
-           <enum>QSizePolicy::Minimum</enum>
+           <enum>QSizePolicy::Preferred</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>50</width>
+            <width>22</width>
             <height>20</height>
            </size>
           </property>
@@ -693,8 +509,259 @@ QPushButton:pressed {
         </item>
        </layout>
       </item>
-      <item row="1" column="1">
-       <spacer name="verticalSpacer">
+      <item row="6" column="5">
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
+        <item>
+         <widget class="QPushButton" name="lrc">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>135</width>
+            <height>135</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    border-image: url(:/main/linear.png);
+    border: 2px solid transparent;  /* Invisible border to maintain size */
+    border-radius: 8px;  /* Rounded corners */
+}
+
+QPushButton:hover {
+    border-image: url(:/main/linear.png);
+	background-color: rgb(255, 255, 0);
+    border-radius: 8px;  /* Rounded corners */
+}
+
+QPushButton:pressed {
+    border-image: url(:/main/linearclk.png);
+	background-color: none;
+    border-radius: 8px;  /* Rounded corners */
+}</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_10">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Preferred</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>26</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="5">
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
+        <item>
+         <widget class="QPushButton" name="sa">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>135</width>
+            <height>135</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    border-image: url(:/main/submit.png);
+    border: 2px solid transparent;  /* Invisible border to maintain size */
+    border-radius: 8px;  /* Rounded corners */
+}
+
+QPushButton:hover {
+    border-image: url(:/main/submit.png);
+	background-color: rgb(255, 255, 0);
+    border-radius: 8px;  /* Rounded corners */
+}
+
+QPushButton:pressed {
+    border-image: url(:/main/submitclk.png);
+	background-color: none;
+    border-radius: 8px;  /* Rounded corners */
+}</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_8">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Preferred</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>26</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="6">
+       <spacer name="horizontalSpacer_6">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::MinimumExpanding</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>97</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="4" column="5">
+       <widget class="QLabel" name="label_7">
+        <property name="styleSheet">
+         <string notr="true">font-family: &quot;Iceland&quot;;
+font-size: 16pt;
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="text">
+         <string>Submit     Answers</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QLabel" name="label_8">
+        <property name="styleSheet">
+         <string notr="true">font-family: &quot;Iceland&quot;;
+font-size: 16pt;
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="text">
+         <string>Encoder Calibration</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="3">
+       <widget class="QLabel" name="label_5">
+        <property name="styleSheet">
+         <string notr="true">font-family: &quot;Iceland&quot;;
+font-size: 16pt;
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="text">
+         <string>Closed Loop Control</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::MinimumExpanding</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="6" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_9">
+        <item>
+         <widget class="QPushButton" name="encoder">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>135</width>
+            <height>135</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    border-image: url(:/main/calibrate.png);
+    border: 2px solid transparent;  /* Invisible border to maintain size */
+    border-radius: 8px;  /* Rounded corners */
+}
+
+QPushButton:hover {
+    border-image: url(:/main/calibrate.png);
+	background-color: rgb(255, 255, 0);
+    border-radius: 8px;  /* Rounded corners */
+}
+
+QPushButton:pressed {
+    border-image: url(:/main/calclk.png);
+	background-color: none;
+    border-radius: 8px;  /* Rounded corners */
+}</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_11">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Minimum</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>22</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item row="8" column="3">
+       <spacer name="verticalSpacer_3">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
         </property>
@@ -704,16 +771,32 @@ QPushButton:pressed {
         <property name="sizeHint" stdset="0">
          <size>
           <width>20</width>
-          <height>148</height>
+          <height>80</height>
          </size>
         </property>
        </spacer>
       </item>
-      <item row="6" column="3">
+      <item row="0" column="5">
+       <spacer name="verticalSpacer_7">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>2</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="7" column="3">
        <widget class="QLabel" name="label_9">
         <property name="styleSheet">
          <string notr="true">font-family: &quot;Iceland&quot;;
-font-size: 14pt;
+font-size: 16pt;
 color: rgb(255, 255, 255);</string>
         </property>
         <property name="text">
@@ -724,64 +807,40 @@ color: rgb(255, 255, 255);</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <spacer name="verticalSpacer_6">
+      <item row="5" column="3">
+       <spacer name="verticalSpacer_2">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeType">
-         <enum>QSizePolicy::Fixed</enum>
+         <enum>QSizePolicy::Minimum</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
           <width>20</width>
-          <height>40</height>
+          <height>30</height>
          </size>
         </property>
        </spacer>
       </item>
-      <item row="0" column="5">
+      <item row="1" column="5">
        <widget class="QComboBox" name="ports">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="currentText">
          <string/>
         </property>
        </widget>
-      </item>
-      <item row="0" column="6">
-       <layout class="QHBoxLayout" name="horizontalLayout_4">
-        <item>
-         <widget class="QLabel" name="statusIndicator">
-          <property name="minimumSize">
-           <size>
-            <width>24</width>
-            <height>24</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>24</width>
-            <height>24</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QLabel#statusIndicator{
-	border-image: url(:/main/noSignal.png);
-}
-
-QLabel#statusIndicator[status=&quot;green&quot;] {
-	border-image: url(:/main/goodSignal.png);
-}
-
-QLabel#statusIndicator[status=&quot;red&quot;] {
-    border-image: url(:/main/noSignal.png); /* or a red icon */
-}</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </item>
      </layout>
     </item>
