@@ -1,15 +1,208 @@
 import sys
 import asset.resources 
+from datetime import datetime
 from PyQt5 import QtWidgets, uic, QtChart, QtCore, QtGui
 import numpy as np
 import serial.tools.list_ports
 import matplotlib.pyplot as plt
 import control as ctrl
+import firebase_admin
+from firebase_admin import credentials, firestore
+import queue
+import pandas as pd
 
-#Firebase parameters
-FIREBASE_URL = "https://your-project-id.firebaseio.com/"
-FIREBASE_SECRET = "your_firebase_secret"
+# Firebase Configuration - Update these with your actual values
+FIREBASE_PROJECT_ID = "..."  # Your project ID
+SERVICE_ACCOUNT_PATH = "..." # Path to your service account JSON file
+FIREBASE_STATUS = 1;
 
+DEBUG = 1;
+class FirebaseManager:
+    def __init__(self):
+        """Initialize Firebase connection"""
+        self.db = None
+        self.is_connected = False
+        self.initialize_firebase()
+    
+    def initialize_firebase(self):
+        """Initialize Firebase with service account credentials"""
+        try:
+            # Initialize Firebase (only once)
+            if not firebase_admin._apps:
+                cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
+                firebase_admin.initialize_app(cred)
+            
+            # Get Firestore database reference
+            self.db = firestore.client()
+            self.is_connected = True
+            print("Firebase initialized successfully")
+            
+        except FileNotFoundError:
+            print(f"Service account file not found: {SERVICE_ACCOUNT_PATH}")
+            self.is_connected = False
+        except Exception as e:
+            print(f"Firebase initialization failed: {e}")
+            self.is_connected = False
+    
+    def upload_student_submission(self, student, submission_data):
+        """Upload student submission and scores to Firebase"""
+        if not self.is_connected:
+            return False
+            
+        try:
+            timestamp = datetime.now()
+            
+            submission_entry = {
+                'timestamp': timestamp,
+                'submitted_parameters': {
+                    'K_fopdt': submission_data.get('K_fopdt', 0),
+                    'tau_fopdt': submission_data.get('tau_fopdt', 0),
+                    'L_fopdt': submission_data.get('L_fopdt', 0),
+                    'K1': submission_data.get('K1', 0),
+                    'K2': submission_data.get('K2', 0),
+                    'K3': submission_data.get('K3', 0)
+                },
+                'true_parameters': {
+                    'K_fopdt': submission_data.get('true_K_fopdt', 0),
+                    'tau_fopdt': submission_data.get('true_tau_fopdt', 0),
+                    'L_fopdt': submission_data.get('true_L_fopdt', 0),
+                    'k1': submission_data.get('true_k1', 0),
+                    'k2': submission_data.get('true_k2', 0),
+                    'k3': submission_data.get('true_k3', 0)
+                },
+                'scores': {
+                    'model_score': submission_data.get('model_score', 0),
+                    'control_score': submission_data.get('control_score', 0),
+                    'final_score': submission_data.get('final_score', 0)
+                },
+                'errors': {
+                    'K_fopdt_error_percent': submission_data.get('K_fopdt_error_percent', 0),
+                    'tau_fopdt_error_percent': submission_data.get('tau_fopdt_error_percent', 0),
+                    'L_fopdt_error_percent': submission_data.get('L_fopdt_error_percent', 0)
+                },
+                'controller_type': submission_data.get('controller_type', 'Unknown')  # P, PI, or PID
+            }
+            
+            doc_ref = self.db.collection("Data_Praktikum").document(student)
+            
+            # Check if document exists
+            doc = doc_ref.get()
+            if doc.exists:
+                # Document exists, check if field exists
+                doc_data = doc.to_dict()
+                
+                if 'Modul 9&10' in doc_data:
+                    # Field exists, add new submission to the array
+                    doc_ref.update({
+                        'Modul 9&10': [submission_entry]
+                    })
+                    print(f"Added submission to existing 'Modul 9&10' field for student: {student}")
+                else:
+                    # Document exists but field doesn't exist, create the field
+                    doc_ref.update({
+                        'Modul 9&10': [submission_entry]
+                    })
+                    print(f"Created 'Modul 9&10' field in existing document for student: {student}")
+            else:
+                # Document doesn't exist, create it with the field
+                doc_ref.set({
+                    'Modul 9&10': [submission_entry]
+                })
+                print(f"Created new document with 'Modul 9&10' field for student: {student}")
+
+            return True
+            
+        except Exception as e:
+            print(f"Failed to upload student submission: {e}")
+            return False
+
+    def upload_student_score(self, student, score):
+        """Upload or update student score in Firebase"""
+        if not self.is_connected:
+            return False
+            
+        try:
+            doc_ref = self.db.collection("Nilai").document(student)
+            
+            # Check if document exists
+            doc = doc_ref.get()
+            if doc.exists:
+                doc_data = doc.to_dict()
+
+                if '(Modul 9&10) Borang Simulasi' in doc_data:
+                    # Field exists, update the score
+                    doc_ref.update({
+                        '(Modul 9&10) Borang Simulasi': score
+                    })
+                    print(f"Updated existing score for student: {student}")
+                
+                else:
+                    # Document exists but field doesn't exist, create the field
+                    doc_ref.update({
+                        '(Modul 9&10) Borang Simulasi': score
+                    })
+                    print(f"Created '(Modul 9&10) Borang Simulasi' field in existing document for student: {student}")
+
+            else:
+                # Document doesn't exist, create it with the score
+                doc_ref.set({
+                    'score': score
+                })
+                print(f"Created new document with score for student: {student}")
+
+            return True
+            
+        except Exception as e:
+            print(f"Failed to upload student score: {e}")
+            return False
+
+    def find_student(self, group):
+        """Check if a student document exists in Firebase"""
+        if not self.is_connected:
+            return []
+            
+        try:
+            docs = self.db.collection("Account").stream()
+
+            matching_students = []
+            for doc in docs:
+                data = doc.to_dict()
+                if 'Kelompok' in data and data['Kelompok'] == group:
+                    matching_students.append({
+                        'NPM': doc.id,
+                    })
+            
+            return matching_students
+            
+        except Exception as e:
+            print(f"Failed to find student: {e}")
+            return []
+
+    def test_upload_student_submission(self):
+        """Test function to upload a sample student submission"""
+        sample_student = "2206036171"
+        sample_submission = {
+            'K_fopdt': 1.0,
+            'tau_fopdt': 0.5,
+            'L_fopdt': 0.1,
+            'K1': 2.0,
+            'K2': 3.0,
+            'K3': 4.0,
+            'true_K_fopdt': 1.1,
+            'true_tau_fopdt': 0.55,
+            'true_L_fopdt': 0.15,
+            'true_k1': 2.1,
+            'true_k2': 3.1,
+            'true_k3': 4.1,
+            'model_score': 90,
+            'control_score': 85,
+            'final_score': 88,
+            'K_fopdt_error_percent': 10,
+            'tau_fopdt_error_percent': 10,
+            'L_fopdt_error_percent': 50,
+            'controller_type': 'PID'
+        }
+        self.upload_student_submission(sample_student, sample_submission)
 def get_available_ports():
     """Return a list of available serial ports."""
     ports = serial.tools.list_ports.comports()
@@ -52,6 +245,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.serial_conn = None  
         self.child_windows = {}
+        group = "0"
+
+        # Initialize Firebase Manager
+        if FIREBASE_STATUS:
+            self.firebase_manager = FirebaseManager()
+            self.current_students = self.firebase_manager.find_student(group)  # Example group "A1"
+
+            #self.firebase_manager.test_upload_student_submission()  # Test upload function
 
         self.olc.clicked.connect(self.olcClicked)
         self.clc.clicked.connect(self.clcClicked)
@@ -238,6 +439,8 @@ class Encoder(QtWidgets.QMainWindow):
 
         self.serial_conn = serial_conn
         self.main_window = main_window  # Store reference to main window
+        self.serial_lock = QtCore.QMutex()
+        self.cmd_queue = queue.Queue()
 
         # Connect buttons
         self.pls.pressed.connect(self.plsPressed)
@@ -252,15 +455,37 @@ class Encoder(QtWidgets.QMainWindow):
         self.timer.start(200)  # every 200 ms (5 Hz) request
 
     def safe_write(self, data):
-        try:
-            if self.serial_conn and self.serial_conn.is_open:
-                self.serial_conn.write(data)
-            else:
-                QtWidgets.QMessageBox.critical(self, "Serial Error", "Serial connection lost.")
-                self.close()
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Serial Error", f"Serial error: {e}")
+        if not self.serial_conn or not self.serial_conn.is_open:
+            QtWidgets.QMessageBox.critical(self, "Serial Error", "Serial connection lost.")
             self.close()
+       
+        if self.serial_lock.tryLock():
+            try:
+                self.serial_conn.write(data)           
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Serial Error", f"Serial error: {e}")
+                self.close()
+            finally:
+                self.serial_lock.unlock()
+                self.processQueue()
+        else:
+            self.cmd_queue.put(data)
+
+    def processQueue(self):
+        while not self.cmd_queue.empty():
+            if self.serial_lock.tryLock():
+                try:
+                    data = self.cmd_queue.get()
+                except Exception as e:
+                    break
+
+                try:
+                    self.serial_conn.write(data)            
+                except Exception as e:
+                    QtWidgets.QMessageBox.critical(self, "Serial Error", f"Serial error: {e}")
+                    self.close()
+                finally:
+                    self.serial_lock.unlock()
 
     def plsPressed(self):
         self.timer.stop()  
@@ -798,29 +1023,58 @@ class olc(QtWidgets.QMainWindow):
         #Step response
         
         # Calculate input PWM value for the model
-        if hasattr(self, 'minLinRPM') and hasattr(self, 'maxLinRPM') and hasattr(self, 'maxRPM'):
-            # If target equals maxRPM, use full PWM
-            if abs(target_rpm - self.maxRPM) < 0.01:
-                input_pwm = 255
-            else:
-                # Map targetRPM to PWM using the linear relationship
-                input_pwm = ((target_rpm - self.minLinRPM) / (self.maxLinRPM - self.minLinRPM)) * 255
-        else:
-            # Default to full PWM if motor characteristics aren't available
-            input_pwm = 255
+        input_pwm = self.controller_data[-1] if hasattr(self, 'controller_data') and self.controller_data else 0
 
         t,y = ctrl.step_response(G, T=real_time)
-        self.fopdt_output = y * input_pwm  # Scale by input PWM
-        #print(y)
+        # Define delay (1 second)
+        delay = 1.0  # seconds
 
-        for i in range(len(t)):
-            self.fopdtSeries.append(t[i] * 1000, y[i] * input_pwm)  # Convert back to ms and scale by PWM
-        
+        # Find how many samples correspond to the delay
+        dt = t[1] - t[0]  # time step
+        n_delay = int(delay / dt)
+
+        # Create delayed response with same length
+        y_delayed = np.zeros_like(y)
+
+        if n_delay < len(y):
+            y_delayed[n_delay:] = y[:-n_delay]  # shift right and cut the tail
+
+        t_delayed = t  # time vector remains the same
+        # Now scale by input PWM
+        self.fopdt_output = y_delayed * input_pwm
+
+        # Append to your data series (convert seconds → ms)
+        for i in range(len(t_delayed)):
+            self.fopdtSeries.append(t_delayed[i] * 1000, y_delayed[i] * input_pwm)        
 
     def on_hover(self, point, state):
         """Show tooltip when hovering points"""
         if state:
-            self.tooltip.setText(f"Time: {point.x():.1f} ms\nSpeed: {point.y():.1f} RPM")
+            # Find the closest data point in our dataset
+            if hasattr(self, 'time_data') and hasattr(self, 'rpm_data'):
+                # Get the x-coordinate from the hovered point
+                hover_time = point.x()
+                
+                # Find the closest time in our actual data
+                closest_index = 0
+                min_distance = float('inf')
+                
+                for i, time_val in enumerate(self.time_data):
+                    distance = abs(time_val - hover_time)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_index = i
+                
+                # Get the actual values from our dataset
+                actual_time = self.time_data[closest_index]
+                actual_speed = self.rpm_data[closest_index]
+                
+                # Use actual data values in tooltip
+                self.tooltip.setText(f"Time: {actual_time} ms\nSpeed: {actual_speed:.1f} RPM")
+            else:
+                # Fallback to chart coordinates if data not available
+                self.tooltip.setText(f"Time: {point.x():.1f} ms\nSpeed: {point.y():.1f} RPM")
+
             self.tooltip.adjustSize()
 
             # Position tooltip near mouse (top left instead of top right)
@@ -834,7 +1088,31 @@ class olc(QtWidgets.QMainWindow):
     def on_hover2(self, point, state):
         """Show tooltip when hovering points in second chart"""
         if state:
-            self.tooltip2.setText(f"Time: {point.x():.1f} ms\nPWM: {point.y():.1f}")
+            # Find the closest data point in our dataset
+            if hasattr(self, 'time_data') and hasattr(self, 'controller_data'):
+                # Get the x-coordinate from the hovered point
+                hover_time = point.x()
+                
+                # Find the closest time in our actual data
+                closest_index = 0
+                min_distance = float('inf')
+                
+                for i, time_val in enumerate(self.time_data):
+                    distance = abs(time_val - hover_time)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_index = i
+                
+                # Get the actual values from our dataset
+                actual_time = self.time_data[closest_index]
+                actual_pwm = self.controller_data[closest_index]
+                
+                # Use actual data values in tooltip
+                self.tooltip2.setText(f"Time: {actual_time:.1f} ms\nPWM: {actual_pwm:.1f}")
+            else:
+                # Fallback to chart coordinates if data not available
+                self.tooltip2.setText(f"Time: {point.x():.1f} ms\nPWM: {point.y():.1f}")
+            
             self.tooltip2.adjustSize()
 
             # Position tooltip near mouse (top left instead of top right)
@@ -1107,15 +1385,24 @@ class olc(QtWidgets.QMainWindow):
         if not hasattr(self, 'time_data') or not hasattr(self, 'rpm_data'):
             return
             
-        target = self.target_data[0] if self.target_data else 0
+        target = self.target_data[-1] if self.target_data else 0
         max_speed = max(self.rpm_data)
         
         # Find rise time (10% to 90% of target)
-        start_time = self.time_data[0]
-        threshold_10 = 0.1 * target
-        threshold_28_3 = 0.283 * target
-        threshold_63_2 = 0.632 * target
-        threshold_90 = 0.9 * target
+        for i, target in enumerate(self.target_data):
+            if target != 0:
+                start_time = self.time_data[i]
+                break
+        else:
+            start_time = 0
+
+        #Calculate final value
+        fv = self.rpm_data[-1]
+
+        threshold_10 = 0.1 * fv
+        threshold_28_3 = 0.283 * fv
+        threshold_63_2 = 0.632 * fv
+        threshold_90 = 0.9 * fv
 
         rise_start = None
         time_28_3 = None
@@ -1137,14 +1424,45 @@ class olc(QtWidgets.QMainWindow):
         t_28_3 = (time_28_3 - start_time) if start_time and time_28_3 else 0
         t_63_2 = (time_63_2 - start_time) if start_time and time_63_2 else 0
 
-        #Calculate final value
-        fv = self.rpm_data[-1]
+        #Try calculating for dead time
+        #Try calculating for dead time
+        gradient_at_tau = None
+        dead_time = None
+        if t_63_2:
+            # Find index closest to t_63_2 in time_data
+            t_63_2_index = None
+            for i, t in enumerate(self.time_data):
+                if t >= t_63_2 + start_time:
+                    t_63_2_index = i
+                    break
+            
+            if t_63_2_index is not None and t_63_2_index > 0 and t_63_2_index < len(self.time_data) - 1:
+                # Use centered finite difference to calculate gradient
+                dt_before = self.time_data[t_63_2_index] - self.time_data[t_63_2_index - 1]
+                dt_after = self.time_data[t_63_2_index + 1] - self.time_data[t_63_2_index]
+                
+                drpm_before = self.rpm_data[t_63_2_index] - self.rpm_data[t_63_2_index - 1]
+                drpm_after = self.rpm_data[t_63_2_index + 1] - self.rpm_data[t_63_2_index]
+                
+                # Average the before and after gradients
+                gradient_at_tau = ((drpm_before / dt_before) + (drpm_after / dt_after)) / 2.0
+                
+                # Calculate dead time using the tangent method
+                if gradient_at_tau > 0:
+                    # Calculate the y-intercept of the tangent line
+                    y_intercept = self.rpm_data[t_63_2_index] - gradient_at_tau * self.time_data[t_63_2_index]
+                    
+                    # Calculate time when tangent line crosses x-axis (y = 0)
+                    dead_time = -y_intercept / gradient_at_tau
+                    print(f"Calculated dead time: {dead_time} ms")
+                    # Update the dead time estimate
+                    sampling_time_olc = 10  # ms
 
         #Find settling time 2% oscillation band
         settling_time = 0
         if rise_end:
-            upper_bound = fv * 1.02
-            lower_bound = fv * 0.98
+            upper_bound = fv * 1.05
+            lower_bound = fv * 0.95
             for i in range(len(self.rpm_data)-1, -1, -1):
                 if not (lower_bound <= self.rpm_data[i] <= upper_bound):
                     settling_time = self.time_data[i+1] - start_time if (i+1) < len(self.time_data) else 0
@@ -1161,10 +1479,11 @@ class olc(QtWidgets.QMainWindow):
         #Find FOPDT Parameters
         try:
             sampling_time_olc = 10  # ms
-            self.main_window.true_fopdt_K = fv / self.controller_data[0] if self.controller_data and self.controller_data[0] != 0 else 0
+            self.main_window.true_fopdt_K = fv / self.controller_data[-1] if self.controller_data and self.controller_data[-1] != 0 else 0
             self.main_window.true_fopdt_tau = 1.5 * (t_63_2 - t_28_3) / 1000.0  # convert to seconds
             self.main_window.true_fopdt_L = 0.5 * sampling_time_olc / 1000.0  # convert to seconds
-            print(f"Calculated FOPDT Parameters: K={self.main_window.true_fopdt_K}, Tau={self.main_window.true_fopdt_tau}, L={self.main_window.true_fopdt_L}")
+            L_test = dead_time / 1000.0 if dead_time else self.main_window.true_fopdt_L
+            print(f"Calculated FOPDT Parameters: K={self.main_window.true_fopdt_K}, Tau={self.main_window.true_fopdt_tau}, L={self.main_window.true_fopdt_L}, L_test={L_test}, gradient_at_tau={gradient_at_tau}")
         except Exception as e:
             print(f"Error calculating FOPDT parameters: {e}")
             QtWidgets.QMessageBox.warning(self, "Calculation Error", f"Error calculating FOPDT parameters: {e}")
@@ -1373,7 +1692,31 @@ class clc(QtWidgets.QMainWindow):
     def on_hover(self, point, state):
         """Show tooltip when hovering points"""
         if state:
-            self.tooltip.setText(f"Time: {point.x():.1f} ms\nSpeed: {point.y():.1f} RPM")
+            # Find the closest data point in our dataset
+            if hasattr(self, 'time_data') and hasattr(self, 'rpm_data'):
+                # Get the x-coordinate from the hovered point
+                hover_time = point.x()
+                
+                # Find the closest time in our actual data
+                closest_index = 0
+                min_distance = float('inf')
+                
+                for i, time_val in enumerate(self.time_data):
+                    distance = abs(time_val - hover_time)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_index = i
+                
+                # Get the actual values from our dataset
+                actual_time = self.time_data[closest_index]
+                actual_speed = self.rpm_data[closest_index]
+                
+                # Use actual data values in tooltip
+                self.tooltip.setText(f"Time: {actual_time} ms\nSpeed: {actual_speed:.1f} RPM")
+            else:
+                # Fallback to chart coordinates if data not available
+                self.tooltip.setText(f"Time: {point.x():.1f} ms\nSpeed: {point.y():.1f} RPM")
+
             self.tooltip.adjustSize()
 
             # Position tooltip near mouse (top left instead of top right)
@@ -1387,7 +1730,31 @@ class clc(QtWidgets.QMainWindow):
     def on_hover2(self, point, state):
         """Show tooltip when hovering points in second chart"""
         if state:
-            self.tooltip2.setText(f"Time: {point.x():.1f} ms\nPWM: {point.y():.1f}")
+            # Find the closest data point in our dataset
+            if hasattr(self, 'time_data') and hasattr(self, 'controller_data'):
+                # Get the x-coordinate from the hovered point
+                hover_time = point.x()
+                
+                # Find the closest time in our actual data
+                closest_index = 0
+                min_distance = float('inf')
+                
+                for i, time_val in enumerate(self.time_data):
+                    distance = abs(time_val - hover_time)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_index = i
+                
+                # Get the actual values from our dataset
+                actual_time = self.time_data[closest_index]
+                actual_pwm = self.controller_data[closest_index]
+                
+                # Use actual data values in tooltip
+                self.tooltip2.setText(f"Time: {actual_time:.1f} ms\nPWM: {actual_pwm:.1f}")
+            else:
+                # Fallback to chart coordinates if data not available
+                self.tooltip2.setText(f"Time: {point.x():.1f} ms\nPWM: {point.y():.1f}")
+            
             self.tooltip2.adjustSize()
 
             # Position tooltip near mouse (top left instead of top right)
@@ -1527,9 +1894,17 @@ class clc(QtWidgets.QMainWindow):
         #Analyze transient response
         target = self.target_data[0] if self.target_data else 0
         fv = self.rpm_data[-1] if self.rpm_data else 0
+        
+        # Find rise time (10% to 90% of target)
+        for i, target in enumerate(self.target_data):
+            if target != 0:
+                start_time = self.time_data[i]
+                break
+        else:
+            start_time = 0
 
         #Is there an overshoot?
-        overshoot = max(self.rpm_data) - target if self.rpm_data else 0
+        overshoot = max(self.rpm_data) - fv if self.rpm_data else 0
         if overshoot > 0:
             print(f"Overshoot detected: {overshoot} RPM")
 
@@ -1537,13 +1912,11 @@ class clc(QtWidgets.QMainWindow):
         overshoot_time = None
         for i, speed in enumerate(self.rpm_data):
             if speed == max(self.rpm_data):
-                overshoot_time = self.time_data[i]
+                overshoot_time = self.time_data[i] - start_time
                 break
-        
-        # Find rise time (10% to 90% of target)
-        start_time = self.time_data[0]
-        threshold_10 = 0.1 * target
-        threshold_90 = 0.9 * target
+
+        threshold_10 = 0.1 * fv
+        threshold_90 = 0.9 * fv
 
         rise_start = None
         rise_end = None
@@ -1560,8 +1933,8 @@ class clc(QtWidgets.QMainWindow):
         #Find settling time 2% oscillation band
         settling_time = 0
         if rise_end:
-            upper_bound = fv * 1.02
-            lower_bound = fv * 0.98
+            upper_bound = fv * 1.05
+            lower_bound = fv * 0.95
             for i in range(len(self.rpm_data)-1, -1, -1):
                 if not (lower_bound <= self.rpm_data[i] <= upper_bound):
                     settling_time = self.time_data[i+1] - start_time if (i+1) < len(self.time_data) else 0
@@ -1653,6 +2026,7 @@ class sa(QtWidgets.QMainWindow):
         else:
             QtWidgets.QMessageBox.warning(self, "Error", "True FOPDT parameters not available. Run analysis first.")
             return
+        
         if (hasattr(self.main_window, 'k1_PID') and hasattr(self.main_window, 'k2_PID') and 
             hasattr(self.main_window, 'k3_PID') and hasattr(self.main_window, 'k1_PI') and 
             hasattr(self.main_window, 'k2_PI') and hasattr(self.main_window, 'k3_PI') and 
@@ -1662,22 +2036,34 @@ class sa(QtWidgets.QMainWindow):
                 #PI or P controller
                 if submit_K2 == 0:
                     #P controller
+                    true_k1 = getattr(self.main_window, 'k1_P', None)
+                    true_k2 = 0
+                    true_k3 = 0
                     k1_error = abs(submit_K1 - self.main_window.k1_P) / self.main_window.k1_P if self.main_window.k1_P != 0 else float('inf')
+                    k2_error = 0
+                    k3_error = 0
                     control_score = self.error_to_score(k1_error)
 
                     print(f"P Controller K1 Error: {k1_error*100:.2f}%")
                 else:
                     #PI controller
+                    true_k1 = getattr(self.main_window, 'k1_PI', None)
+                    true_k2 = getattr(self.main_window, 'k2_PI', None)
+                    true_k3 = 0
                     k1_error = abs(submit_K1 - self.main_window.k1_PI) / self.main_window.k1_PI if self.main_window.k1_PI != 0 else float('inf')
                     k2_error = abs(submit_K2 - self.main_window.k2_PI) / self.main_window.k2_PI if self.main_window.k2_PI != 0 else float('inf')
+                    k3_error = 0
                     control_score = (self.error_to_score(k1_error) + self.error_to_score(k2_error)) / 2.0
 
                     print(f"PI Controller K1 Error: {k1_error*100:.2f}%, K2 Error: {k2_error*100:.2f}%")
             else:
                 #PID controller
-                k1_error = abs(submit_K1 - self.main_window.k1_PID) / self.main_window.k1_PID if self.main_window.k1_PID != 0 else float('inf')
-                k2_error = abs(submit_K2 - self.main_window.k2_PID) / self.main_window.k2_PID if self.main_window.k2_PID != 0 else float('inf')
-                k3_error = abs(submit_K3 - self.main_window.k3_PID) / self.main_window.k3_PID if self.main_window.k3_PID != 0 else float('inf')
+                true_k1 = getattr(self.main_window, 'k1_PID', None)
+                true_k2 = getattr(self.main_window, 'k2_PID', None)
+                true_k3 = getattr(self.main_window, 'k3_PID', None)
+                k1_error = abs(abs(submit_K1 - self.main_window.k1_PID) / self.main_window.k1_PID) if self.main_window.k1_PID != 0 else float('inf')
+                k2_error = abs(abs(submit_K2 - self.main_window.k2_PID) / self.main_window.k2_PID) if self.main_window.k2_PID != 0 else float('inf')
+                k3_error = abs(abs(submit_K3 - self.main_window.k3_PID) / self.main_window.k3_PID) if self.main_window.k3_PID != 0 else float('inf')
                 control_score = (self.error_to_score(k1_error) + self.error_to_score(k2_error) + self.error_to_score(k3_error)) / 3.0
 
                 print(f"PID Controller K1 Error: {k1_error*100:.2f}%, K2 Error: {k2_error*100:.2f}%, K3 Error: {k3_error*100:.2f}%")
@@ -1687,8 +2073,40 @@ class sa(QtWidgets.QMainWindow):
             print(f"Control Score: {control_score*10:.2f}/100")
             print(f"Final Score: {final_score:.2f}/100")
 
+            # Upload submission to Firebase
+            if self.main_window and self.main_window.firebase_manager:
+                submission_data = {
+                    'K_fopdt': submit_K_fopdt,
+                    'tau_fopdt': submit_tau_fopdt,
+                    'L_fopdt': submit_L_fopdt,
+                    'K1': submit_K1,
+                    'K2': submit_K2,
+                    'K3': submit_K3,
+                    'true_K_fopdt': self.main_window.true_fopdt_K,
+                    'true_tau_fopdt': self.main_window.true_fopdt_tau,
+                    'true_L_fopdt': self.main_window.true_fopdt_L,
+                    'true_k1': true_k1,
+                    'true_k2': true_k2,
+                    'true_k3': true_k3,
+                    'model_score': model_score,
+                    'control_score': control_score,
+                    'final_score': final_score,
+                    'K_fopdt_error_percent': K_fopdt_error * 100,
+                    'tau_fopdt_error_percent': tau_fopdt_error * 100,
+                    'L_fopdt_error_percent': L_fopdt_error * 100,
+                    'controller_type': 'PID' if submit_K3 != 0 else ('PI' if submit_K2 != 0 else 'P')
+                }
+                
+                for student_info in self.main_window.current_students:
+                    student_npm = student_info['NPM']
+                    self.main_window.firebase_manager.update_student_info(student_npm, submission_data)
 
-
+            # Upload score to Firebase
+            if self.main_window and self.main_window.firebase_manager:
+                for student_info in self.main_window.current_students:
+                    student_npm = student_info['NPM']
+                    self.main_window.firebase_manager.update_student_info(student_npm, final_score)
+                
         else:
             QtWidgets.QMessageBox.warning(self, "Error", "True control parameters not available. Run analysis first.")
             return

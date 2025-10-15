@@ -589,13 +589,14 @@ void motorOpenLoopControl(){
       switch(command) {
           case 1: {
               float targetSPEED;
+              float setPoint;
               int targetPWM;
               int i;
 
               //Times used
               unsigned long startTime, currentTime;
               unsigned long SETTLE_TIME = 1000;
-              unsigned long LOGGING_TIME = 3000;
+              unsigned long LOGGING_TIME = 4000;
               unsigned long SAMPLING_TIME = 10;
 
               float medBuff[3] = {0};
@@ -605,12 +606,9 @@ void motorOpenLoopControl(){
 
               if(Serial.available()){
                 targetSPEED = Serial.parseFloat();
+                setPoint = 0;
+                targetPWM = 0;
                 //Serial.println(targetSPEED);
-                if(abs(maxRPM - targetSPEED) < 0.1){
-                  targetPWM = 255.0;
-                } else {
-                  targetPWM = (int)mapFloat(targetSPEED, minLinRPM, maxLinRPM, minLinPWM, maxLinPWM);
-                }
                 moveMotor(0,0);
                 delay(SETTLE_TIME);
 
@@ -623,9 +621,17 @@ void motorOpenLoopControl(){
 
                 //Print header
                 Serial.println("time_ms,rpm,targetrpm,pwm");
-                moveMotor(targetPWM,1);
 
                 while(millis() - startTime <= LOGGING_TIME){
+                  if(millis() - startTime > 1000){
+                    setPoint = targetSPEED;
+                    if(abs(maxRPM - setPoint) < 0.1){
+                      targetPWM = 255.0;
+                    } else {
+                      targetPWM = (int)mapFloat(setPoint, minLinRPM, maxLinRPM, minLinPWM, maxLinPWM);
+                    }
+                    moveMotor(targetPWM,1);
+                  }
                   if(millis() - currentTime >= SAMPLING_TIME){
                     float speed = readMotorSpeed(float(millis()-currentTime));
                     noInterrupts();
@@ -646,7 +652,7 @@ void motorOpenLoopControl(){
 
                     float olSpeed = MAFilter(MABuff, MALen);
 
-                    Serial.printf("%lu,%.2f,%.2f,%d\n", millis()-startTime, olSpeed, targetSPEED, targetPWM);
+                    Serial.printf("%lu,%.2f,%.2f,%d\n", millis()-startTime, olSpeed, setPoint, targetPWM);
 
                   }
                 }
@@ -686,6 +692,7 @@ void motorClosedLoopControl(){
       switch(command) {
           case 1: {
               float targetSPEED, currentSPEED;
+              float setPoint;
               float k1, k2, k3;
               int targetPWM;
               float olSpeed, speed;
@@ -694,7 +701,7 @@ void motorClosedLoopControl(){
               //Times used
               unsigned long startTime, currentTime;
               unsigned long SETTLE_TIME = 1000;
-              unsigned long LOGGING_TIME = 5000;
+              unsigned long LOGGING_TIME = 4000;
               unsigned long SAMPLING_TIME = 10;
 
               float medBuff[5] = {0};
@@ -727,11 +734,15 @@ void motorClosedLoopControl(){
                 Serial.println("time_ms,rpm,targetrpm,pwm");
 
                 //Discrete PID control initializer
-                e[2] = targetSPEED; e[1] = targetSPEED; e[0] = targetSPEED;
+                e[2] = 0; e[1] = 0; e[0] = 0;
                 c[2] = c[1] + k1 * e[2] + k2 * e[1] + k3 * e[0];
+                setPoint = 0;
                 moveMotor((int)constrain(c[2], 0, 255),1);
 
                 while(millis() - startTime <= LOGGING_TIME){
+                  if(millis() - startTime > 1000){
+                    setPoint = targetSPEED;
+                  }
                   if(millis() - currentTime > SAMPLING_TIME){
                     speed = readMotorSpeed(float(SAMPLING_TIME));
                     noInterrupts();
@@ -756,7 +767,7 @@ void motorClosedLoopControl(){
                     for (i = 0; i < eLen - 1; i++){
                       e[i] = e[i + 1];
                     }
-                    e[eLen - 1] = targetSPEED - olSpeed;
+                    e[eLen - 1] = setPoint - olSpeed;
                     for (i = 0; i < cLen - 1; i++){
                       c[i] = c[i + 1];
                     }
@@ -764,7 +775,7 @@ void motorClosedLoopControl(){
                     targetPWM = (int)constrain(c[cLen - 1], 0, 255);
                     moveMotor(targetPWM,1);
 
-                    Serial.printf("%lu,%.2f,%.2f,%d\n", millis()-startTime, olSpeed, targetSPEED, targetPWM);
+                    Serial.printf("%lu,%.2f,%.2f,%d\n", millis()-startTime, olSpeed, setPoint, targetPWM);
 
                   }
                 }
