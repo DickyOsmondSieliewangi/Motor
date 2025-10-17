@@ -620,7 +620,7 @@ void motorOpenLoopControl(){
                 currentTime = millis();
 
                 //Print header
-                Serial.println("time_ms,rpm,targetrpm,pwm");
+                Serial.println("time_ms,rpm,targetrpm,pwm,error");
 
                 while(millis() - startTime <= LOGGING_TIME){
                   if(millis() - startTime > 1000){
@@ -652,7 +652,7 @@ void motorOpenLoopControl(){
 
                     float olSpeed = MAFilter(MABuff, MALen);
 
-                    Serial.printf("%lu,%.2f,%.2f,%d\n", millis()-startTime, olSpeed, setPoint, targetPWM);
+                    Serial.printf("%lu,%.2f,%.2f,%d,%.2f\n", millis()-startTime, olSpeed, setPoint, targetPWM, setPoint - olSpeed);
 
                   }
                 }
@@ -704,8 +704,8 @@ void motorClosedLoopControl(){
               unsigned long LOGGING_TIME = 4000;
               unsigned long SAMPLING_TIME = 10;
 
-              float medBuff[5] = {0};
-              float MABuff[10] = {0};
+              float medBuff[3] = {0};
+              float MABuff[5] = {0};
               float c[3] = {0};
               float e[3] = {0};
               int medLen = sizeof(medBuff) / sizeof(medBuff[0]);
@@ -731,7 +731,7 @@ void motorClosedLoopControl(){
                 currentTime = millis();
 
                 //Print header
-                Serial.println("time_ms,rpm,targetrpm,pwm");
+                Serial.println("time_ms,rpm,targetrpm,pwm,control,error");
 
                 //Discrete PID control initializer
                 e[2] = 0; e[1] = 0; e[0] = 0;
@@ -772,10 +772,12 @@ void motorClosedLoopControl(){
                       c[i] = c[i + 1];
                     }
                     c[cLen - 1] = c[cLen - 2] + k1 * e[eLen - 1] + k2 * e[eLen - 2] + k3 * e[eLen - 3];
+
                     targetPWM = (int)constrain(c[cLen - 1], 0, 255);
+                    c[cLen - 1] = targetPWM;
                     moveMotor(targetPWM,1);
 
-                    Serial.printf("%lu,%.2f,%.2f,%d\n", millis()-startTime, olSpeed, setPoint, targetPWM);
+                    Serial.printf("%lu,%.2f,%.2f,%d,%.2f,%.2f\n", millis()-startTime, olSpeed, setPoint, targetPWM, c[cLen - 1], e[eLen - 1]);
 
                   }
                 }

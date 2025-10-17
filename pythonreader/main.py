@@ -957,13 +957,18 @@ class olc(QtWidgets.QMainWindow):
         #Add a second graph
         self.chart2 = QtChart.QChart()
         self.controllerSeries = QtChart.QLineSeries()  # Controller output series
+        self.errorSeries = QtChart.QLineSeries()  # Error series
         self.controllerSeries.setPointsVisible(True)  # Show actual data points
+        self.errorSeries.setPointsVisible(True)  # Show actual data points
         self.chart2.addSeries(self.controllerSeries)
+        self.chart2.addSeries(self.errorSeries)
         self.controllerSeries.setColor(QtGui.QColor("green"))
+        self.errorSeries.setColor(QtGui.QColor("red"))
         self.chart2.legend().setVisible(True)
         self.chart2.legend().setAlignment(QtCore.Qt.AlignTop)
         self.chart2.legend().setFont(QtGui.QFont("Arial", 10))
         self.controllerSeries.setName("Controller Output (PWM)")
+        self.errorSeries.setName("Error (RPM)")
 
         # Create axes
         self.chart2.createDefaultAxes()
@@ -1089,7 +1094,7 @@ class olc(QtWidgets.QMainWindow):
         """Show tooltip when hovering points in second chart"""
         if state:
             # Find the closest data point in our dataset
-            if hasattr(self, 'time_data') and hasattr(self, 'controller_data'):
+            if hasattr(self, 'time_data') and hasattr(self, 'controller_data') and hasattr(self, 'error_data'):
                 # Get the x-coordinate from the hovered point
                 hover_time = point.x()
                 
@@ -1106,9 +1111,10 @@ class olc(QtWidgets.QMainWindow):
                 # Get the actual values from our dataset
                 actual_time = self.time_data[closest_index]
                 actual_pwm = self.controller_data[closest_index]
+                actual_error = self.error_data[closest_index]
                 
                 # Use actual data values in tooltip
-                self.tooltip2.setText(f"Time: {actual_time:.1f} ms\nPWM: {actual_pwm:.1f}")
+                self.tooltip2.setText(f"Time: {actual_time:.1f} ms\nPWM: {actual_pwm:.1f}\nError: {actual_error:.1f}")
             else:
                 # Fallback to chart coordinates if data not available
                 self.tooltip2.setText(f"Time: {point.x():.1f} ms\nPWM: {point.y():.1f}")
@@ -1277,10 +1283,12 @@ class olc(QtWidgets.QMainWindow):
             self.rpm_data = []
             self.target_data = []
             self.controller_data = []
+            self.error_data = []
 
             self.speedSeries.clear()
             self.targetSeries.clear()
             self.controllerSeries.clear()
+            self.errorSeries.clear()
 
             self.safe_write(f"1 {targetRPM}".encode())
             self.serial_conn.flush()
@@ -1305,29 +1313,32 @@ class olc(QtWidgets.QMainWindow):
                     return
 
                  # Skip the header line
-                if line == "time_ms,rpm,targetrpm,pwm":
+                if line == "time_ms,rpm,targetrpm,pwm,error":
                     print("Received header, starting data collection...")
                     return
                     
                 try:
                     # Parse the CSV format: timestamp,actual_speed,target_speed
                     parts = line.split(',')
-                    if len(parts) == 4:
+                    if len(parts) == 5:
                         timestamp = int(parts[0])  # milliseconds
                         actual_speed = float(parts[1])
                         target_speed = float(parts[2])
                         controller_output = float(parts[3])  # PWM value
+                        error = float(parts[4])
                         
                         # Store data
                         self.time_data.append(timestamp)
                         self.rpm_data.append(actual_speed)
                         self.target_data.append(target_speed)
                         self.controller_data.append(controller_output)
+                        self.error_data.append(error)
                         
                         # Add to chart series
                         self.speedSeries.append(timestamp, actual_speed)
                         self.targetSeries.append(timestamp, target_speed)
                         self.controllerSeries.append(timestamp, controller_output)
+                        self.errorSeries.append(timestamp, error)
                         
                         # Update chart axes to fit data
                         self.chart.axisX().setRange(0, max(self.time_data) + 100)
@@ -1335,11 +1346,11 @@ class olc(QtWidgets.QMainWindow):
                         
                         # Calculate y-axis range to fit data with some margin
                         max_y = max(max(self.rpm_data, default=0), target_speed) * 1.1
-                        min_y = min(min(self.rpm_data, default=0), 0) * 0.9
+                        min_y = min(self.rpm_data, default=-1) * 1.1
                         self.chart.axisY().setRange(min_y, max_y)
 
-                        max_y2 = max(max(self.controller_data, default=0), 0) * 1.1
-                        min_y2 = min(min(self.controller_data, default=0), 0) * 0.9
+                        max_y2 = max(max(self.controller_data, default=0), max(self.error_data, default=0)) * 1.1
+                        min_y2 = min(min(self.controller_data, default=-1), min(self.error_data, default=-1)) * 1.1
                         self.chart2.axisY().setRange(min_y2, max_y2)
                         
                 except (ValueError, IndexError) as e:
@@ -1453,7 +1464,7 @@ class olc(QtWidgets.QMainWindow):
                     y_intercept = self.rpm_data[t_63_2_index] - gradient_at_tau * self.time_data[t_63_2_index]
                     
                     # Calculate time when tangent line crosses x-axis (y = 0)
-                    dead_time = -y_intercept / gradient_at_tau
+                    dead_time = -y_intercept / gradient_at_tau - 1000
                     print(f"Calculated dead time: {dead_time} ms")
                     # Update the dead time estimate
                     sampling_time_olc = 10  # ms
@@ -1505,7 +1516,7 @@ class olc(QtWidgets.QMainWindow):
             return
         
         try:
-            self.sampling_rate = 0.01  # ms   
+            self.sampling_rate = 0.01  # s   
             self.main_window.k1_PID = self.main_window.Kp_PID * (1 + self.sampling_rate / (2 * self.main_window.Ti_PID) + 2 * self.main_window.Td_PID / self.sampling_rate) if self.main_window.Ti_PID != 0 and self.main_window.Kp_PID != 0 else 0
             self.main_window.k2_PID = self.main_window.Kp_PID * (-1 + self.sampling_rate / (2 * self.main_window.Ti_PID) - 4 * self.main_window.Td_PID / self.sampling_rate) if self.main_window.Ti_PID != 0 and self.main_window.Kp_PID != 0 else 0
             self.main_window.k3_PID = self.main_window.Kp_PID * (2 * self.main_window.Td_PID / self.sampling_rate) if self.main_window.Td_PID != 0 and self.main_window.Kp_PID != 0 else 0
@@ -1544,7 +1555,8 @@ class olc(QtWidgets.QMainWindow):
     def popup2Clicked(self):
         if hasattr(self, 'time_data') and hasattr(self, 'controller_data') and self.time_data and self.controller_data:
             plt.figure(figsize=(10, 6))
-            plt.plot(self.time_data, self.controller_data, 'o-', color='green', linewidth=2)
+            plt.plot(self.time_data, self.controller_data, 'o-', color='green', linewidth=2, label='Controller Output (PWM)')
+            plt.plot(self.time_data, self.error_data, '--', color='red', label='Error (RPM)')
             plt.grid(True)
             plt.xlabel('Time (ms)')
             plt.ylabel('Controller Output (PWM)')
@@ -1620,13 +1632,23 @@ class clc(QtWidgets.QMainWindow):
         #Add a second graph
         self.chart2 = QtChart.QChart()
         self.controllerSeries = QtChart.QLineSeries()  # Controller output series
+        self.rawControlSeries = QtChart.QLineSeries()  # Raw control output series
+        self.errorSeries = QtChart.QLineSeries()  # Error series
         self.controllerSeries.setPointsVisible(True)  # Show actual data points
+        self.rawControlSeries.setPointsVisible(True)  # Show actual data points
+        self.errorSeries.setPointsVisible(True)  # Show actual data points
         self.chart2.addSeries(self.controllerSeries)
+        self.chart2.addSeries(self.rawControlSeries)
+        self.chart2.addSeries(self.errorSeries)
         self.controllerSeries.setColor(QtGui.QColor("green"))
+        self.rawControlSeries.setColor(QtGui.QColor("orange"))
+        self.errorSeries.setColor(QtGui.QColor("red"))
         self.chart2.legend().setVisible(True)
         self.chart2.legend().setAlignment(QtCore.Qt.AlignTop)
         self.chart2.legend().setFont(QtGui.QFont("Arial", 10))
         self.controllerSeries.setName("Controller Output (PWM)")
+        self.rawControlSeries.setName("Raw Control Output (PWM)")
+        self.errorSeries.setName("Error (RPM)")
 
         # Create axes
         self.chart2.createDefaultAxes()
@@ -1748,9 +1770,11 @@ class clc(QtWidgets.QMainWindow):
                 # Get the actual values from our dataset
                 actual_time = self.time_data[closest_index]
                 actual_pwm = self.controller_data[closest_index]
-                
+                actual_control = self.rawController_data[closest_index]
+                actual_error = self.error_data[closest_index]
+
                 # Use actual data values in tooltip
-                self.tooltip2.setText(f"Time: {actual_time:.1f} ms\nPWM: {actual_pwm:.1f}")
+                self.tooltip2.setText(f"Time: {actual_time:.1f} ms\nPWM: {actual_pwm:.1f}\nRaw Control: {actual_control:.1f}\nError: {actual_error:.1f} RPM")
             else:
                 # Fallback to chart coordinates if data not available
                 self.tooltip2.setText(f"Time: {point.x():.1f} ms\nPWM: {point.y():.1f}")
@@ -1785,10 +1809,14 @@ class clc(QtWidgets.QMainWindow):
             self.rpm_data = []
             self.target_data = []
             self.controller_data = []
+            self.rawController_data = []
+            self.error_data = []
 
             self.speedSeries.clear()
             self.targetSeries.clear()
             self.controllerSeries.clear()
+            self.rawControlSeries.clear()
+            self.errorSeries.clear()
 
             self.safe_write(f"1 {targetRPM} {sampling_rate} {k1} {k2} {k3}".encode())
             self.serial_conn.flush()
@@ -1813,29 +1841,35 @@ class clc(QtWidgets.QMainWindow):
                     return
 
                  # Skip the header line
-                if line == "time_ms,rpm,targetrpm,pwm":
+                if line == "time_ms,rpm,targetrpm,pwm,control,error":
                     print("Received header, starting data collection...")
                     return
                     
                 try:
                     # Parse the CSV format: timestamp,actual_speed,target_speed
                     parts = line.split(',')
-                    if len(parts) == 4:
+                    if len(parts) == 6:
                         timestamp = int(parts[0])  # milliseconds
                         actual_speed = float(parts[1])
                         target_speed = float(parts[2])
                         controller_output = float(parts[3])
+                        raw_control_output = float(parts[4])  # Raw control output (before saturation)
+                        error = float(parts[5])
                         
                         # Store data
                         self.time_data.append(timestamp)
                         self.rpm_data.append(actual_speed)
                         self.target_data.append(target_speed)
                         self.controller_data.append(controller_output)
+                        self.rawController_data.append(raw_control_output)
+                        self.error_data.append(error)
 
                         # Add to chart series
                         self.speedSeries.append(timestamp, actual_speed)
                         self.targetSeries.append(timestamp, target_speed)
                         self.controllerSeries.append(timestamp, controller_output)
+                        self.rawControlSeries.append(timestamp, raw_control_output)
+                        self.errorSeries.append(timestamp, error)
 
                         # Update chart axes to fit data
                         self.chart.axisX().setRange(0, max(self.time_data) + 100)
@@ -1843,11 +1877,11 @@ class clc(QtWidgets.QMainWindow):
                         
                         # Calculate y-axis range to fit data with some margin
                         max_y = max(max(self.rpm_data, default=0), target_speed) * 1.1
-                        min_y = min(min(self.rpm_data, default=0), 0) * 0.9
+                        min_y = min(min(self.rpm_data, default=-1), -1) * 1.1
                         self.chart.axisY().setRange(min_y, max_y)
-                        
-                        max_y2 = max(self.controller_data, default=0) * 1.1
-                        min_y2 = min(self.controller_data, default=0) * 0.9
+
+                        max_y2 = max(max(max(self.controller_data, default=0), max(self.rawController_data, default=0)), max(self.error_data, default=0)) * 1.1
+                        min_y2 = min(min(min(self.controller_data, default=-1), min(self.rawController_data, default=-1)), min(self.error_data, default=-1)) * 1.1
                         self.chart2.axisY().setRange(min_y2, max_y2)
 
                 except (ValueError, IndexError) as e:
@@ -1876,7 +1910,9 @@ class clc(QtWidgets.QMainWindow):
     def popup2Clicked(self):
         if hasattr(self, 'time_data') and hasattr(self, 'controller_data') and self.time_data and self.controller_data:
             plt.figure(figsize=(10, 6))
-            plt.plot(self.time_data, self.controller_data, 'o-', color='green', linewidth=2)
+            plt.plot(self.time_data, self.controller_data, 'o-', color='green', linewidth=2, label='Controller Output (PWM)')
+            plt.plot(self.time_data, self.rawController_data, '--', color='orange', label='Raw Control Output (PWM)')
+            plt.plot(self.time_data, self.error_data, '--', color='red', label='Error (RPM)')
             plt.grid(True)
             plt.xlabel('Time (ms)')
             plt.ylabel('Controller Output (PWM)')
